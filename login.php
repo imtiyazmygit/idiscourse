@@ -31,19 +31,39 @@ if (isset($db_error)) {
                 if (!isset($pdo) || !$pdo) throw new Exception('Database unavailable.');
 
                 if (filter_var($loginId, FILTER_VALIDATE_EMAIL)) {
-                    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
-                    $stmt->execute([$loginId]);
+                    $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1");
+                    $stmt->execute([strtolower($loginId)]);
                 } else {
                     $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = ? LIMIT 1");
                     $stmt->execute([strtolower($loginId)]);
                 }
 
                 $user = $stmt->fetch();
-                if ($user && password_verify($password, $user['password'])) {
+                $isAuthenticated = false;
+                $storedPassword = $user['password'] ?? '';
+
+                if ($user && $storedPassword !== '' && password_verify($password, $storedPassword)) {
+                    $isAuthenticated = true;
+
+                    // Keep password hashes up to date as hashing defaults evolve.
+                    if (password_needs_rehash($storedPassword, PASSWORD_DEFAULT)) {
+                        $newHash = password_hash($password, PASSWORD_DEFAULT);
+                        $upd = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+                        $upd->execute([$newHash, $user['id']]);
+                    }
+                } elseif ($user && $storedPassword !== '' && $password === $storedPassword) {
+                    // Backward compatibility for legacy plain-text passwords; convert to hash immediately.
+                    $isAuthenticated = true;
+                    $newHash = password_hash($password, PASSWORD_DEFAULT);
+                    $upd = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+                    $upd->execute([$newHash, $user['id']]);
+                }
+
+                if ($isAuthenticated) {
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
-                    $_SESSION['full_name'] = $user['full_name'];
-                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['full_name'] = $user['full_name'] ?? $user['username'];
+                    $_SESSION['role'] = $user['role'] ?? 'reader';
                     redirect('index.php');
                 } else {
                     $error = 'Invalid email/username or password.';

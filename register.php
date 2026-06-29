@@ -47,8 +47,8 @@ if (isset($db_error)) {
                 // normalize username to lower for uniqueness
                 $normalizedUsername = strtolower($username);
 
-                $stmt = $pdo->prepare("SELECT username, email FROM users WHERE email = ? OR LOWER(username) = ? LIMIT 1");
-                $stmt->execute([$email, $normalizedUsername]);
+                $stmt = $pdo->prepare("SELECT username, email FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? LIMIT 1");
+                $stmt->execute([strtolower($email), $normalizedUsername]);
                 $existing = $stmt->fetch();
 
                 if ($existing) {
@@ -59,12 +59,57 @@ if (isset($db_error)) {
                     }
                 } else {
                     $hashed = password_hash($password, PASSWORD_DEFAULT);
-                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'reader')");
-                    if ($stmt->execute([$username, $email, $hashed, $full_name])) {
+
+                    // Try common schema variants so registration works even if deployed DB has older structure.
+                    $insertVariants = [
+                        [
+                            "INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'reader')",
+                            [$username, $email, $hashed, $full_name]
+                        ],
+                        [
+                            "INSERT INTO users (username, email, password, full_name) VALUES (?, ?, ?, ?)",
+                            [$username, $email, $hashed, $full_name]
+                        ],
+                        [
+                            "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'reader')",
+                            [$username, $email, $hashed]
+                        ],
+                        [
+                            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+                            [$username, $email, $hashed]
+                        ]
+                    ];
+
+                    $inserted = false;
+                    $lastInsertError = null;
+
+                    foreach ($insertVariants as $variant) {
+                        try {
+                            $stmt = $pdo->prepare($variant[0]);
+                            if ($stmt->execute($variant[1])) {
+                                $inserted = true;
+                                break;
+                            }
+                        } catch (PDOException $insertEx) {
+                            $lastInsertError = $insertEx;
+
+                            // Unknown column / column count mismatch; try next variant.
+                            if (in_array($insertEx->getCode(), ['42S22', '21S01'], true)) {
+                                continue;
+                            }
+
+                            throw $insertEx;
+                        }
+                    }
+
+                    if ($inserted) {
                         $success = 'Registration successful! You can now login.';
                         // clear old values on success
                         $old = ['full_name' => '', 'username' => '', 'email' => ''];
                     } else {
+                        if ($lastInsertError instanceof Exception) {
+                            throw $lastInsertError;
+                        }
                         $error = 'Registration failed. Please try again later.';
                     }
                 }
