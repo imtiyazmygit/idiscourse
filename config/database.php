@@ -34,7 +34,7 @@ $isLocalEnv = in_array($serverName, ['localhost', '127.0.0.1'], true)
 $localDefaults = [
     'host' => '127.0.0.1',
     'port' => '3306',
-    'dbname' => 'idiscourse',
+    'dbname' => 'u767322683_idiscourse',
     'username' => 'root',
     'password' => '',
 ];
