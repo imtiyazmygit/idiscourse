@@ -194,7 +194,7 @@ if (isset($db_error)) {
     <?php endif; ?>
     <?php if($error): ?><div class="alert alert-error"><?php echo $error; ?></div><?php endif; ?>
     <?php if($success): ?><div class="alert alert-success"><?php echo $success; ?></div><?php endif; ?>
-    <form method="POST">
+    <form method="POST" class="no-validate">
         <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <div class="form-group">
             <label>Full Name</label>

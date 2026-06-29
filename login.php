@@ -158,7 +158,7 @@ if (isset($db_error)) {
         </div>
     <?php endif; ?>
     <?php if($error): ?><div class="alert alert-error"><?php echo $error; ?></div><?php endif; ?>
-    <form method="POST">
+    <form method="POST" class="no-validate">
         <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <div class="form-group">
             <label>Email or Username</label>
