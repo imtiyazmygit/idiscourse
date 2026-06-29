@@ -171,6 +171,6 @@ if (isset($db_error)) {
         <button type="submit" class="btn btn-primary btn-block">Login</button>
     </form>
     <div class="auth-footer"><p>Don't have an account? <a href="register.php">Register here</a></p></div></div></div>
-<script src="js/main.js"></script>
+<script src="js/main.js?v=20260629a"></script>
 </body>
 </html>

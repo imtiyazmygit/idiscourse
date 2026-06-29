@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // ========== LOADING INDICATOR FOR AJAX FORMS ==========
-    const submitButtons = document.querySelectorAll('form button[type="submit"]');
+    const submitButtons = document.querySelectorAll('form.ajax-form button[type="submit"]');
     submitButtons.forEach(button => {
         button.addEventListener('click', function() {
             const form = this.closest('form');
