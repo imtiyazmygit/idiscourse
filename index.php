@@ -56,7 +56,7 @@ if (isset($pdo) && $pdo) {
                 <button class="dropdown-btn">Categories ▾</button>
                 <div class="dropdown-content">
                     <?php foreach($categories as $cat): ?>
-                    <a href="#"><?php echo $cat['icon']; ?> <?php echo htmlspecialchars($cat['name_en']); ?></a>
+                    <a href="search.php?category=<?php echo urlencode($cat['slug']); ?>"><?php echo $cat['icon']; ?> <?php echo htmlspecialchars($cat['name_en']); ?></a>
                     <?php endforeach; ?>
                 </div>
             </div>

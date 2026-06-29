@@ -148,8 +148,8 @@ if (isset($pdo) && $pdo) {
         <div class="admin-section">
             <h2>Admin Controls</h2>
             <div class="admin-buttons">
-                <a href="admin/users.php" class="btn btn-secondary">👥 Manage All Scholars</a>
-                <a href="admin/settings.php" class="btn btn-secondary">⚙️ Site Settings</a>
+                <a href="users.php" class="btn btn-secondary">👥 Manage All Scholars</a>
+                <a href="about.php" class="btn btn-secondary">⚙️ Site Info</a>
             </div>
         </div>
         <?php endif; ?>
