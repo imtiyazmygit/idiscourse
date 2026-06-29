@@ -514,6 +514,10 @@ document.addEventListener('DOMContentLoaded', function() {
     submitButtons.forEach(button => {
         button.addEventListener('click', function() {
             const form = this.closest('form');
+            if (form && form.classList.contains('no-validate')) {
+                return;
+            }
+
             if (form && form.checkValidity()) {
                 const originalText = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
