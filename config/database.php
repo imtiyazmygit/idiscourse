@@ -1,6 +1,31 @@
 <?php
 session_start();
 
+// Temporary on-demand debug mode for production troubleshooting.
+if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+
+    register_shutdown_function(function () {
+        $lastError = error_get_last();
+        if (!$lastError) {
+            return;
+        }
+
+        $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+        if (in_array($lastError['type'], $fatalTypes, true)) {
+            echo '<pre style="background:#111;color:#0f0;padding:12px;white-space:pre-wrap;">';
+            echo 'FATAL ERROR\n';
+            echo 'Type: ' . $lastError['type'] . "\n";
+            echo 'Message: ' . $lastError['message'] . "\n";
+            echo 'File: ' . $lastError['file'] . "\n";
+            echo 'Line: ' . $lastError['line'] . "\n";
+            echo '</pre>';
+        }
+    });
+}
+
 $host = 'localhost';
 $port = '3306';
 $dbname = 'u767322683_idiscourse';
