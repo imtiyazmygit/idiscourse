@@ -36,7 +36,16 @@ function redirect($url) {
 
 function generateCsrfToken() {
     if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        try {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        } catch (Throwable $e) {
+            // Fallback for environments where random_bytes intermittently fails.
+            if (function_exists('openssl_random_pseudo_bytes')) {
+                $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
+            } else {
+                $_SESSION['csrf_token'] = hash('sha256', uniqid((string) mt_rand(), true));
+            }
+        }
     }
     return $_SESSION['csrf_token'];
 }
