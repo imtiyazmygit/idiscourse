@@ -12,12 +12,32 @@ if (isset($pdo) && $pdo) {
 }
 $error = $success = '';
 $old = ['full_name' => '', 'username' => '', 'email' => ''];
+$debugMode = isset($_GET['debug']) && $_GET['debug'] === '1';
+$debugMessages = [];
+
+if ($debugMode) {
+    $debugMessages[] = 'Debug mode enabled.';
+    $debugMessages[] = 'Request method: ' . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN');
+}
 
 if (isset($db_error)) {
     // Database connection failed; show message and skip registration logic
     $error = 'Database connection error: ' . htmlspecialchars($db_error);
+    if ($debugMode) {
+        $debugMessages[] = 'DB error detected: ' . $db_error;
+    }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+    $csrfFromPost = $_POST['csrf_token'] ?? '';
+    $csrfValid = validateCsrfToken($csrfFromPost);
+
+    if ($debugMode) {
+        $debugMessages[] = 'Posted username: ' . ($_POST['username'] ?? '(missing)');
+        $debugMessages[] = 'Posted email: ' . ($_POST['email'] ?? '(missing)');
+        $debugMessages[] = 'Posted password length: ' . strlen((string)($_POST['password'] ?? ''));
+        $debugMessages[] = 'CSRF valid: ' . ($csrfValid ? 'yes' : 'no');
+    }
+
+    if (!$csrfValid) {
         $error = 'Security token expired. Please try again.';
     } else {
         $username = trim($_POST['username'] ?? '');
@@ -50,6 +70,10 @@ if (isset($db_error)) {
                 $stmt = $pdo->prepare("SELECT username, email FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? LIMIT 1");
                 $stmt->execute([strtolower($email), $normalizedUsername]);
                 $existing = $stmt->fetch();
+
+                if ($debugMode) {
+                    $debugMessages[] = 'Existing account found: ' . ($existing ? 'yes' : 'no');
+                }
 
                 if ($existing) {
                     if (!empty($existing['email']) && strtolower($existing['email']) === strtolower($email)) {
@@ -88,10 +112,17 @@ if (isset($db_error)) {
                             $stmt = $pdo->prepare($variant[0]);
                             if ($stmt->execute($variant[1])) {
                                 $inserted = true;
+                                if ($debugMode) {
+                                    $debugMessages[] = 'Insert variant succeeded: ' . $variant[0];
+                                }
                                 break;
                             }
                         } catch (PDOException $insertEx) {
                             $lastInsertError = $insertEx;
+
+                            if ($debugMode) {
+                                $debugMessages[] = 'Insert variant failed [' . $insertEx->getCode() . ']: ' . $insertEx->getMessage();
+                            }
 
                             // Unknown column / column count mismatch; try next variant.
                             if (in_array($insertEx->getCode(), ['42S22', '21S01'], true)) {
@@ -104,6 +135,9 @@ if (isset($db_error)) {
 
                     if ($inserted) {
                         $success = 'Registration successful! You can now login.';
+                        if ($debugMode) {
+                            $debugMessages[] = 'Registration result: success';
+                        }
                         // clear old values on success
                         $old = ['full_name' => '', 'username' => '', 'email' => ''];
                     } else {
@@ -114,6 +148,9 @@ if (isset($db_error)) {
                     }
                 }
             } catch (Exception $e) {
+                if ($debugMode) {
+                    $debugMessages[] = 'Exception: ' . $e->getMessage();
+                }
                 $error = 'Registration error: ' . htmlspecialchars($e->getMessage());
             }
         }
@@ -148,6 +185,13 @@ if (isset($db_error)) {
         </div>
     </nav>
     <div class="auth-container"><div class="auth-card"><h2>Join i-Discourse Mehfil(IDM) Knowledge Hub</h2><p>Register to access research and publications</p>
+    <?php if($debugMode && count($debugMessages)): ?>
+        <div class="alert alert-success" style="font-family:monospace; font-size:12px; text-align:left;">
+            <?php foreach($debugMessages as $msg): ?>
+                <div><?php echo htmlspecialchars($msg); ?></div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
     <?php if($error): ?><div class="alert alert-error"><?php echo $error; ?></div><?php endif; ?>
     <?php if($success): ?><div class="alert alert-success"><?php echo $success; ?></div><?php endif; ?>
     <form method="POST">
