@@ -26,11 +26,35 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
     });
 }
 
-$host = 'localhost';
-$port = '3306';
-$dbname = 'u767322683_idiscourse';
-$username = 'u767322683_admin';
-$password = 'Hurify@1234';
+$serverName = strtolower((string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? ''));
+$isLocalEnv = in_array($serverName, ['localhost', '127.0.0.1'], true)
+    || str_ends_with($serverName, '.local')
+    || $serverName === '';
+
+$localDefaults = [
+    'host' => '127.0.0.1',
+    'port' => '3306',
+    'dbname' => 'idiscourse',
+    'username' => 'root',
+    'password' => '',
+];
+
+$productionDefaults = [
+    'host' => 'localhost',
+    'port' => '3306',
+    'dbname' => 'u767322683_idiscourse',
+    'username' => 'u767322683_admin',
+    'password' => 'Hurify@1234',
+];
+
+$selectedDefaults = $isLocalEnv ? $localDefaults : $productionDefaults;
+
+// Environment variables take priority when available.
+$host = getenv('DB_HOST') ?: $selectedDefaults['host'];
+$port = getenv('DB_PORT') ?: $selectedDefaults['port'];
+$dbname = getenv('DB_NAME') ?: $selectedDefaults['dbname'];
+$username = getenv('DB_USER') ?: $selectedDefaults['username'];
+$password = getenv('DB_PASS') ?: $selectedDefaults['password'];
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
